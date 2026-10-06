@@ -1,0 +1,53 @@
+{
+  "name": "diagram-audit",
+  "version": "0.1.0",
+  "description": "Find overlapping, clipped and hidden text in canvas, SVG and HTML diagrams, and controls that do nothing, by rendering pages in headless Chromium.",
+  "type": "module",
+  "main": "./src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs",
+    "./analyze": "./src/analyze.mjs",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "diagram-audit": "bin/diagram-audit.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node test/self-test.mjs",
+    "demo": "node bin/diagram-audit.mjs examples/broken.html examples/fixed.html --fail-on none"
+  },
+  "keywords": [
+    "canvas",
+    "svg",
+    "visual-testing",
+    "accessibility",
+    "playwright",
+    "text-overlap",
+    "i18n",
+    "diagrams",
+    "data-visualization",
+    "education"
+  ],
+  "license": "MIT",
+  "author": "Minwoo Kwon",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/seegongsik/diagram-audit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/seegongsik/diagram-audit/issues"
+  },
+  "homepage": "https://github.com/seegongsik/diagram-audit#readme",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "playwright": "^1.56.1"
+  }
+}

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>diagram-audit example: broken</title>
+<!--
+  A small interactive diagram with five defects that are easy to ship and hard to spot by reading code.
+  Run:  npx diagram-audit examples/broken.html
+  1. The canvas height is capped in px while the drawing scales with the width (labels fall off the bottom on wide screens).
+  2. Two labels are placed on top of each other.
+  3. A label runs off the right edge.
+  4. The "Air resistance" slider is not wired to anything.
+  5. The legend row does not wrap, so a phone screen scrolls sideways.
+  examples/fixed.html is the same page with the five defects fixed.
+-->
+<style>
+  body { margin: 0; padding: 16px; font: 16px/1.5 sans-serif; color: #1a1a1a; background: #fafafa; }
+  main { max-width: 560px; margin: 0 auto; }
+  canvas { display: block; width: 100%; background: #fff; }
+  svg { display: block; width: 100%; max-width: 360px; margin-top: 16px; }
+  label { display: block; margin-top: 12px; }
+  .legend { display: flex; gap: 12px; white-space: nowrap; margin-top: 12px; font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Projectile range</h1>
+  <canvas id="plot"></canvas>
+  <label>Launch angle <input id="angle" type="range" min="10" max="80" value="45"></label>
+  <label>Air resistance <input id="drag" type="range" min="0" max="10" value="0"></label>
+  <div class="legend"><span>solid: trajectory</span><span>H: apex height</span><span>R: horizontal range on level ground</span></div>
+  <svg viewBox="0 0 360 120" aria-label="Velocity components">
+    <line x1="40" y1="100" x2="200" y2="20" stroke="#2563eb" stroke-width="3"/>
+    <line x1="40" y1="100" x2="200" y2="100" stroke="#999" stroke-dasharray="4 3"/>
+    <line x1="200" y1="100" x2="200" y2="20" stroke="#999" stroke-dasharray="4 3"/>
+    <text x="96" y="116" font-size="14" font-family="sans-serif">vx = v cos θ</text>
+    <text x="150" y="112" font-size="14" font-family="sans-serif">vy = v sin θ</text>
+  </svg>
+</main>
+<script>
+  const cv = document.getElementById('plot');
+  const angle = document.getElementById('angle');
+
+  function draw() {
+    const w = cv.parentElement.clientWidth;
+    const sc = w / 400;                 // the drawing is laid out for a 400 px wide design...
+    const h = Math.min(w * 0.6, 200);   // ...but the height is capped in px            (defect 1)
+    cv.width = w;
+    cv.height = h;
+    cv.style.height = h + 'px';
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, w, h);
+
+    const th = (angle.value * Math.PI) / 180, v = 20, g = 9.8;
+    const R = (v * v * Math.sin(2 * th)) / g;
+    const H = (v * Math.sin(th)) ** 2 / (2 * g);
+    const x0 = 30 * sc, y0 = 210 * sc, k = 8 * sc;
+
+    ctx.strokeStyle = '#999';
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(380 * sc, y0); ctx.stroke();
+    ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    const T = (2 * v * Math.sin(th)) / g;
+    for (let t = 0; t <= T; t += T / 60) {
+      ctx.lineTo(x0 + v * Math.cos(th) * t * k, y0 - (v * Math.sin(th) * t - (g * t * t) / 2) * k);
+    }
+    ctx.stroke();
+
+    ctx.font = 13 * sc + 'px sans-serif';
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillText('v0 = 20 m/s', x0 + 4 * sc, 30 * sc);
+    ctx.fillText('θ = ' + angle.value + '°', x0 + 40 * sc, 32 * sc);                  // defect 2
+    ctx.fillText('H = ' + H.toFixed(1) + ' m', x0 + (R * k) / 2 + 6 * sc, y0 - H * k - 6 * sc);
+    ctx.fillText('R = ' + R.toFixed(1) + ' m', x0 + R * k - 20 * sc, y0 + 18 * sc);
+    ctx.fillText('ground level', 370 * sc, y0 - 4 * sc);                               // defect 3
+  }
+
+  angle.addEventListener('input', draw);
+  // defect 4: nothing listens to the air resistance slider
+  addEventListener('resize', draw);
+  draw();
+</script>
+</body>
+</html>

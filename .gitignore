@@ -1,0 +1,4 @@
+node_modules/
+*.jsonl
+shots/
+.DS_Store

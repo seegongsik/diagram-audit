@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>diagram-audit example: fixed</title>
+<!--
+  examples/broken.html with its defects fixed. Run:  npx diagram-audit examples/fixed.html
+  1. The canvas height grows with the width, like the rest of the drawing (h = 250 * sc).
+  2. The two labels sit on separate lines.
+  3. The right-edge label is right-aligned inside the drawing, on its own row below the range label.
+  4. The air resistance slider changes the trajectory (simple linear drag, integrated numerically).
+  5. The legend wraps.
+  6. The SVG component labels sit on their own sides of the triangle.
+-->
+<style>
+  body { margin: 0; padding: 16px; font: 16px/1.5 sans-serif; color: #1a1a1a; background: #fafafa; }
+  main { max-width: 560px; margin: 0 auto; }
+  canvas { display: block; width: 100%; background: #fff; }
+  svg { display: block; width: 100%; max-width: 360px; margin-top: 16px; }
+  label { display: block; margin-top: 12px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 12px; font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Projectile range</h1>
+  <canvas id="plot"></canvas>
+  <label>Launch angle <input id="angle" type="range" min="10" max="80" value="45"></label>
+  <label>Air resistance <input id="drag" type="range" min="0" max="10" value="0"></label>
+  <div class="legend"><span>solid: trajectory</span><span>H: apex height</span><span>R: horizontal range on level ground</span></div>
+  <svg viewBox="0 0 360 140" aria-label="Velocity components">
+    <line x1="40" y1="100" x2="200" y2="20" stroke="#2563eb" stroke-width="3"/>
+    <line x1="40" y1="100" x2="200" y2="100" stroke="#999" stroke-dasharray="4 3"/>
+    <line x1="200" y1="100" x2="200" y2="20" stroke="#999" stroke-dasharray="4 3"/>
+    <text x="80" y="122" font-size="14" font-family="sans-serif">vx = v cos θ</text>
+    <text x="210" y="64" font-size="14" font-family="sans-serif">vy = v sin θ</text>
+  </svg>
+</main>
+<script>
+  const cv = document.getElementById('plot');
+  const angle = document.getElementById('angle');
+  const drag = document.getElementById('drag');
+
+  // Linear drag a = -b v, integrated with small steps until the projectile lands.
+  function flight(th, v, g, b) {
+    let x = 0, y = 0, vx = v * Math.cos(th), vy = v * Math.sin(th), top = 0;
+    const pts = [[0, 0]];
+    const dt = 0.01;
+    for (let i = 0; i < 2000; i++) {
+      vx -= b * vx * dt;
+      vy -= (g + b * vy) * dt;
+      x += vx * dt;
+      y += vy * dt;
+      if (y < 0) break;
+      top = Math.max(top, y);
+      if (i % 4 === 0) pts.push([x, y]);
+    }
+    pts.push([x, 0]);
+    return { pts, R: x, H: top };
+  }
+
+  function draw() {
+    const w = cv.parentElement.clientWidth;
+    const sc = w / 400;
+    const h = 250 * sc;                 // the height scales with the drawing
+    cv.width = w;
+    cv.height = h;
+    cv.style.height = h + 'px';
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, w, h);
+
+    const th = (angle.value * Math.PI) / 180;
+    const { pts, R, H } = flight(th, 20, 9.8, drag.value * 0.05);
+    const x0 = 30 * sc, y0 = 200 * sc, k = 8 * sc;
+
+    ctx.strokeStyle = '#999';
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(380 * sc, y0); ctx.stroke();
+    ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (const [x, y] of pts) ctx.lineTo(x0 + x * k, y0 - y * k);
+    ctx.stroke();
+
+    ctx.font = 13 * sc + 'px sans-serif';
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillText('v0 = 20 m/s', x0 + 4 * sc, 24 * sc);
+    ctx.fillText('θ = ' + angle.value + '°', x0 + 4 * sc, 42 * sc);
+    ctx.textAlign = 'center';
+    ctx.fillText('H = ' + H.toFixed(1) + ' m', Math.min(x0 + (R * k) / 2, 300 * sc), Math.max(y0 - H * k - 8 * sc, 64 * sc));
+    ctx.fillText('R = ' + R.toFixed(1) + ' m', x0 + R * k, y0 + 20 * sc);
+    ctx.textAlign = 'right';
+    ctx.fillText('ground level', 380 * sc, y0 + 40 * sc);
+  }
+
+  angle.addEventListener('input', draw);
+  drag.addEventListener('input', draw);
+  addEventListener('resize', draw);
+  draw();
+</script>
+</body>
+</html>
