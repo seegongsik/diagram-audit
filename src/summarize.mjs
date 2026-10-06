@@ -66,7 +66,8 @@ export function summarize(records, { sev = 2, max = 12, failOn = 1 } = {}) {
   for (const r of records) {
     const c = counts(r);
     const dead = (r.dead || []).length;
-    const tag = isFailing(r, failOn) ? 'FAIL' : 'ok  ';
+    // report-only mode (--fail-on none) still marks runs with severity 1-2 issues, without failing them
+    const tag = failOn == null ? (isFailing(r, 2) ? 'flag' : 'ok  ') : isFailing(r, failOn) ? 'FAIL' : 'ok  ';
     if (!r.rendered) {
       lines.push(`${tag}  ${r.url} @${r.vw}px  did not load: ${(r.errors || []).map((e) => e.msg).join(' | ').slice(0, 200)}`);
       continue;
